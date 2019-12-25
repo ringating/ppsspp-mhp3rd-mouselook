@@ -16,7 +16,9 @@ scriptWasActive  := 0
 isTogglePressed  := 0
 wasTogglePressed := 0
 
-SetTimer, Update, 10
+SetTimer, Update, 33 ; this value should be ( 1000 / (game's framerate) )
+; if the game's framerate is variable, then use the lowest expected framerate as the "game's framerate"
+; this will hopefully ensure that none of the inputs are missed by the game
 
 return
 
@@ -55,6 +57,9 @@ if (scriptIsActive)
     winCenterX := (winW / 2)
     winCenterY := (winH / 2)
     MouseGetPos, X, Y
+    
+    mdX := X - OldX
+    mdY := Y - OldY
     
     MovedX := ((OldX - X) > 0) ? (OldX - X) : -(OldX - X)
     MovedY := ((OldY - Y) > 0) ? (OldY - Y) : -(OldY - Y)
@@ -119,3 +124,10 @@ wasTogglePressed := isTogglePressed
 scriptWasActive := scriptIsActive
 
 return
+
+
+
+map(value, start1, stop1, start2, stop2)
+{
+    return start2+((stop2-start2)*((value-start1)/(stop1-start1)))
+}
