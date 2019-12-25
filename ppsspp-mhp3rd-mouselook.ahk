@@ -46,14 +46,21 @@ if(isTogglePressed && !wasTogglePressed)
     
     if(scriptIsActive) ; hide/unhide cursor, see https://www.autohotkey.com/boards/viewtopic.php?p=128346#p128346
     {
+        ; hide cursor
         MouseGetPos, , , hwnd
         Gui Cursor:+Owner%hwnd%
         DllCall("ShowCursor", Int, 0)
+        
+        ; enable left click overwrite
+        Hotkey, LButton, LeftClickToP, on
     }
     else
     {
+        ; show cursor
         DllCall("ShowCursor", Int, 1)
-        ; MsgBox, (%mdX%,%mdY%) -> (%dX%,%dY%)
+        
+        ; disable left click overwrite
+        Hotkey, LButton, LeftClickToP, off
     }
 }
 
@@ -178,3 +185,7 @@ updateEMA(val, ByRef avg, alpha)
 {
     avg := alpha*val + (1-alpha)*avg
 }
+
+LeftClickToP:
+send {p}
+return
