@@ -5,12 +5,11 @@ sendmode input
 SetDefaultMouseSpeed, 0
 CoordMode, mouse, window
 
-threshold := 10     ; must move over this many pixels per update in order to register the input
 toggleKey := "F1"   ; the key to enable/disable the script
 pixelsForMaxSpeed := 100 ; moving this many pixels (or more) per update will result in max turn speed
 
 ; see https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-alpha := 0.5
+alpha := 0.75
 ema := 0
 
 prevDir := 0
@@ -72,23 +71,45 @@ if (scriptIsActive)
     dX := max(-1, min(1, mdX / pixelsForMaxSpeed))
     dY := max(-1, min(1, mdY / pixelsForMaxSpeed))
     
-    ; MovedX := ((OldX - X) > 0) ? (OldX - X) : -(OldX - X)
-    ; MovedY := ((OldY - Y) > 0) ? (OldY - Y) : -(OldY - Y)
-    
-    if (abs(dX) > abs(dY)) && (abs(mdX) > threshold)
+    if(mdX != 0)
     {
-        if (OldX > X)
+        if (mdX > 0)
         {
-            inputDir(-1, prevDir)
+            ; target value is between 0 and 1
+            ema := max(0, min(1, ema))
+            
+            if(dX < ema)
+            {
+                inputDir(0, prevDir)
+                updateEMA(0, ema, alpha)
+            }
+            else
+            {
+                inputDir(1, prevDir)
+                updateEMA(1, ema, alpha)
+            }
         }
-        else
+        else ; (mdX < 0)
         {
-            inputDir(1, prevDir)
+            ; target value is between -1 and 0
+            ema := max(-1, min(0, ema))
+            
+            if(dX < ema)
+            {
+                inputDir(-1, prevDir)
+                updateEMA(-1, ema, alpha)
+            }
+            else
+            {
+                inputDir(0, prevDir)
+                updateEMA(0, ema, alpha)
+            }
         }
     }
-    else
+    else ; (mdX == 0)
     {
         inputDir(0, prevDir)
+        updateEMA(0, ema, alpha)
     }
     
     OldX := winCenterX
@@ -100,6 +121,7 @@ else ; if(!scriptIsActive)
     if(scriptWasActive)
     {
         inputDir(0, prevDir)
+        ema := 0
     }
 }
 
@@ -149,4 +171,9 @@ inputDir(val, ByRef prevDirection)
             prevDirection := 1
             return
     }
+}
+
+updateEMA(val, ByRef avg, alpha)
+{
+    avg := alpha*val + (1-alpha)*avg
 }
