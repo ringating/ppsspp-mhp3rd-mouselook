@@ -7,6 +7,11 @@ CoordMode, mouse, window
 
 threshold := 10     ; must move over this many pixels per update in order to register the input
 toggleKey := "F1"   ; the key to enable/disable the script
+pixelsForMaxSpeed := 100 ; moving this many pixels (or more) per update will result in max turn speed
+
+; see https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+alpha := 0.5
+ema := 0
 
 prevDir := 0
 
@@ -43,11 +48,12 @@ if(isTogglePressed && !wasTogglePressed)
     {
         MouseGetPos, , , hwnd
         Gui Cursor:+Owner%hwnd%
-        DllCall("ShowCursor", Int,0)
+        DllCall("ShowCursor", Int, 0)
     }
     else
     {
         DllCall("ShowCursor", Int, 1)
+        ; MsgBox, (%mdX%,%mdY%) -> (%dX%,%dY%)
     }
 }
 
@@ -58,45 +64,31 @@ if (scriptIsActive)
     winCenterY := (winH / 2)
     MouseGetPos, X, Y
     
+    ; mouse delta vector in pixels
     mdX := X - OldX
     mdY := Y - OldY
     
-    MovedX := ((OldX - X) > 0) ? (OldX - X) : -(OldX - X)
-    MovedY := ((OldY - Y) > 0) ? (OldY - Y) : -(OldY - Y)
+    ; mouse delta vector scaled to range of -1 to 1
+    dX := max(-1, min(1, mdX / pixelsForMaxSpeed))
+    dY := max(-1, min(1, mdY / pixelsForMaxSpeed))
     
-    if (MovedX > MovedY) && (MovedX > threshold)
+    ; MovedX := ((OldX - X) > 0) ? (OldX - X) : -(OldX - X)
+    ; MovedY := ((OldY - Y) > 0) ? (OldY - Y) : -(OldY - Y)
+    
+    if (abs(dX) > abs(dY)) && (abs(mdX) > threshold)
     {
         if (OldX > X)
         {
-            if (prevDir == 1)
-            {
-                send, {right up}
-            }
-            send, {left down}
-            prevDir := -1
+            inputDir(-1, prevDir)
         }
         else
         {
-            if (prevDir == -1)
-            {
-                send, {left up}
-            }
-            send, {right down}
-            prevDir := 1
+            inputDir(1, prevDir)
         }
     }
     else
     {
-        if (prevDir == 1)
-        {
-            send, {right up}
-        }
-        if (prevDir == -1)
-        {
-            send, {left up}
-        }
-        
-        prevDir := 0
+        inputDir(0, prevDir)
     }
     
     OldX := winCenterX
@@ -107,16 +99,7 @@ else ; if(!scriptIsActive)
 {
     if(scriptWasActive)
     {
-        if (prevDir == 1)
-        {
-            send, {right up}
-        }
-        if (prevDir == -1)
-        {
-            send, {left up}
-        }
-        
-        prevDir := 0
+        inputDir(0, prevDir)
     }
 }
 
@@ -130,4 +113,40 @@ return
 map(value, start1, stop1, start2, stop2)
 {
     return start2+((stop2-start2)*((value-start1)/(stop1-start1)))
+}
+
+inputDir(val, ByRef prevDirection)
+{
+    switch val
+    {
+        case 0:
+            if (prevDirection == 1)
+            {
+                send, {right up}
+            }
+            if (prevDirection == -1)
+            {
+                send, {left up}
+            }
+            prevDirection := 0
+            return
+            
+        case -1:
+            if (prevDirection == 1)
+            {
+                send, {right up}
+            }
+            send, {left down}
+            prevDirection := -1
+            return
+            
+        case 1:
+            if (prevDirection == -1)
+            {
+                send, {left up}
+            }
+            send, {right down}
+            prevDirection := 1
+            return
+    }
 }
