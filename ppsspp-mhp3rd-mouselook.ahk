@@ -6,10 +6,11 @@ SetDefaultMouseSpeed, 0
 CoordMode, mouse, window
 
 toggleKey := "F1"   ; the key to enable/disable the script
-pixelsForMaxSpeed := 100 ; moving this many pixels (or more) per update will result in max turn speed
+pixelsForMaxSpeed := 120 ; moving this many pixels (or more) per update will result in max turn speed
+pixelThreshold := 10 ; number of pixels mouse must move for input to count at all
 
 ; see https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-alpha := 0.75
+alpha := 0.25
 ema := 0
 
 prevDir := 0
@@ -71,9 +72,9 @@ if (scriptIsActive)
     dX := max(-1, min(1, mdX / pixelsForMaxSpeed))
     dY := max(-1, min(1, mdY / pixelsForMaxSpeed))
     
-    if(mdX != 0)
+    if(mdX < -pixelThreshold || pixelThreshold < mdX)
     {
-        if (mdX > 0)
+        if (mdX >= pixelThreshold)
         {
             ; target value is between 0 and 1
             ema := max(0, min(1, ema))
@@ -89,7 +90,7 @@ if (scriptIsActive)
                 updateEMA(1, ema, alpha)
             }
         }
-        else ; (mdX < 0)
+        else ; (mdX <= -pixelThreshold)
         {
             ; target value is between -1 and 0
             ema := max(-1, min(0, ema))
