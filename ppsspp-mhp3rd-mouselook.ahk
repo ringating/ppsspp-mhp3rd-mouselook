@@ -7,7 +7,7 @@ CoordMode, mouse, window
 
 toggleKey := "F1"   ; the key to enable/disable the script
 pixelsForMaxSpeed := 120 ; moving this many pixels (or more) per update will result in max turn speed
-pixelThreshold := 10 ; number of pixels mouse must move for input to count at all
+pixelThreshold := 30 ; number of pixels mouse must move for input to count at all
 
 ; see https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
 alpha := 0.25
@@ -54,23 +54,23 @@ else
 
 if(didScrollUp)
 {
-    send {%scrollUpKey% up}
+    send {Blind}{%scrollUpKey% up}
     didScrollUp := false
 }
 if(didScrollDown)
 {
-    send {%scrollDownKey% up}
+    send {Blind}{%scrollDownKey% up}
     didScrollDown := false
 }
 if(doScrollUp)
 {
-    send {%scrollUpKey% down}
+    send {Blind}{%scrollUpKey% down}
     didScrollUp := true
     doScrollUp := false
 }
 if(doScrollDown)
 {
-    send {%scrollDownKey% down}
+    send {Blind}{%scrollDownKey% down}
     didScrollDown := true
     doScrollDown := false
 }
@@ -88,14 +88,14 @@ if((isTogglePressed && !wasTogglePressed) || winChange)
         Gui Cursor:+Owner%hwnd%
         DllCall("ShowCursor", Int, 0)
         
-        ; enable left click overwrite
-        Hotkey, LButton, LeftClickToP, on
+        ; enable left click hotkey
+        Hotkey, *LButton, LeftClickHotkey, on
         
         ; enable scroll up overwrite
-        Hotkey, WheelUp, WheelUpHotkey, on
+        Hotkey, *WheelUp, WheelUpHotkey, on
         
         ; enable scroll down overwrite
-        Hotkey, WheelDown, WheelDownHotkey, on
+        Hotkey, *WheelDown, WheelDownHotkey, on
         
         ; store active window's ID
         WinGet, prevWinID, ID, A
@@ -106,14 +106,14 @@ if((isTogglePressed && !wasTogglePressed) || winChange)
         ; show cursor
         DllCall("ShowCursor", Int, 1)
         
-        ; disable left click overwrite
-        Hotkey, LButton, LeftClickToP, off
+        ; disable left click hotkey
+        Hotkey, *LButton, LeftClickHotkey, off
         
         ; disable scroll up overwrite
-        Hotkey, WheelUp, WheelUpHotkey, off
+        Hotkey, *WheelUp, WheelUpHotkey, off
         
         ; disable scroll down overwrite
-        Hotkey, WheelDown, WheelDownHotkey, off
+        Hotkey, *WheelDown, WheelDownHotkey, off
     }
 }
 
@@ -214,11 +214,11 @@ inputDir(val, ByRef prevDirection)
         case 0:
             if (prevDirection == 1)
             {
-                send, {right up}
+                send {Blind}{right up}
             }
             if (prevDirection == -1)
             {
-                send, {left up}
+                send {Blind}{left up}
             }
             prevDirection := 0
             return
@@ -226,18 +226,18 @@ inputDir(val, ByRef prevDirection)
         case -1:
             if (prevDirection == 1)
             {
-                send, {right up}
+                send {Blind}{right up}
             }
-            send, {left down}
+            send {Blind}{left down}
             prevDirection := -1
             return
             
         case 1:
             if (prevDirection == -1)
             {
-                send, {left up}
+                send {Blind}{left up}
             }
-            send, {right down}
+            send {Blind}{right down}
             prevDirection := 1
             return
     }
@@ -248,8 +248,10 @@ updateEMA(val, ByRef avg, alpha)
     avg := alpha*val + (1-alpha)*avg
 }
 
-LeftClickToP:
-send {p}
+LeftClickHotkey:
+send {Blind}{p down}
+KeyWait, LButton
+send {Blind}{p up}
 return
 
 WheelUpHotkey:
