@@ -25,6 +25,18 @@ SetTimer, Update, 33 ; this value should be ( 1000 / (game's framerate) )
 ; if the game's framerate is variable, then use the lowest expected framerate as the "game's framerate"
 ; this will hopefully ensure that none of the inputs are missed by the game
 
+ doScrollUp := false
+didScrollUp := false
+ doScrollDown := false
+didScrollDown := false 
+
+scrollUpKey = ]     ; the key that scroll up is rebound to while script is active
+scrollDownKey = [   ; the key that scroll down is rebound to while script is active
+
+currWinID := 0
+prevWinID := 0
+winChange := false
+
 return
 
 
@@ -33,18 +45,43 @@ Update:
 
 if (GetKeyState(toggleKey, "P"))
 {
-    isTogglePressed := 1
+    isTogglePressed := true
 }
 else
 {
-    isTogglePressed := 0
+    isTogglePressed := false
 }
 
-if(isTogglePressed && !wasTogglePressed)
+if(didScrollUp)
+{
+    send {%scrollUpKey% up}
+    didScrollUp := false
+}
+if(didScrollDown)
+{
+    send {%scrollDownKey% up}
+    didScrollDown := false
+}
+if(doScrollUp)
+{
+    send {%scrollUpKey% down}
+    didScrollUp := true
+    doScrollUp := false
+}
+if(doScrollDown)
+{
+    send {%scrollDownKey% down}
+    didScrollDown := true
+    doScrollDown := false
+}
+
+if((isTogglePressed && !wasTogglePressed) || winChange)
 {
     scriptIsActive := !scriptIsActive
     
-    if(scriptIsActive) ; hide/unhide cursor, see https://www.autohotkey.com/boards/viewtopic.php?p=128346#p128346
+    winChange := false
+    
+    if(scriptIsActive) ; for hide/unhide cursor, see https://www.autohotkey.com/boards/viewtopic.php?p=128346#p128346
     {
         ; hide cursor
         MouseGetPos, , , hwnd
@@ -53,6 +90,16 @@ if(isTogglePressed && !wasTogglePressed)
         
         ; enable left click overwrite
         Hotkey, LButton, LeftClickToP, on
+        
+        ; enable scroll up overwrite
+        Hotkey, WheelUp, WheelUpHotkey, on
+        
+        ; enable scroll down overwrite
+        Hotkey, WheelDown, WheelDownHotkey, on
+        
+        ; store active window's ID
+        WinGet, prevWinID, ID, A
+        currWinID := prevWinID
     }
     else
     {
@@ -61,11 +108,26 @@ if(isTogglePressed && !wasTogglePressed)
         
         ; disable left click overwrite
         Hotkey, LButton, LeftClickToP, off
+        
+        ; disable scroll up overwrite
+        Hotkey, WheelUp, WheelUpHotkey, off
+        
+        ; disable scroll down overwrite
+        Hotkey, WheelDown, WheelDownHotkey, off
     }
 }
 
 if (scriptIsActive)
 {
+    ; disable script if active window has changed since toggling script
+    WinGet, currWinID, ID, A
+    if(currWinID != prevWinID)
+    {
+        ; MsgBox, currWinID: %currWinID%, prevWinID: %prevWinID%
+        winChange := true
+        return
+    }
+    
     WinGetPos, , , winW, winH, A ; A means the Active window
     winCenterX := (winW / 2)
     winCenterY := (winH / 2)
@@ -188,4 +250,12 @@ updateEMA(val, ByRef avg, alpha)
 
 LeftClickToP:
 send {p}
+return
+
+WheelUpHotkey:
+doScrollUp := 1
+return
+
+WheelDownHotkey:
+doScrollDown := 1
 return
