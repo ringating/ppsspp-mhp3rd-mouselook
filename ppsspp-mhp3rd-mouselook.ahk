@@ -30,8 +30,29 @@ didScrollUp := false
  doScrollDown := false
 didScrollDown := false 
 
-scrollUpKey = ]     ; the key that scroll up is rebound to while script is active
-scrollDownKey = [   ; the key that scroll down is rebound to while script is active
+emuDpadUpKey = up
+emuDpadLeftKey = left
+emuDpadRightKey = right
+emuDpadDownKey = down
+
+emuAnalogUpKey = h
+emuAnalogLeftKey = j
+emuAnalogRightKey = k
+emuAnalogDownKey = l
+
+emuTriangleKey = u
+emuSquareKey = i
+emuCircleKey = o
+emuCrossKey = p
+
+emuLKey = ;
+emuRKey = '
+
+menuModeToggleKey = r
+menuMode := false
+
+menuModeSoundPath = main6bL.dsp.wav
+combatModeSoundPath = main3f.dsp.wav
 
 currWinID := 0
 prevWinID := 0
@@ -54,23 +75,23 @@ else
 
 if(didScrollUp)
 {
-    send {Blind}{%scrollUpKey% up}
+    send {Blind}{%emuDpadUpKey% up}
     didScrollUp := false
 }
 if(didScrollDown)
 {
-    send {Blind}{%scrollDownKey% up}
+    send {Blind}{%emuDpadDownKey% up}
     didScrollDown := false
 }
 if(doScrollUp)
 {
-    send {Blind}{%scrollUpKey% down}
+    send {Blind}{%emuDpadUpKey% down}
     didScrollUp := true
     doScrollUp := false
 }
 if(doScrollDown)
 {
-    send {Blind}{%scrollDownKey% down}
+    send {Blind}{%emuDpadDownKey% down}
     didScrollDown := true
     doScrollDown := false
 }
@@ -88,8 +109,11 @@ if((isTogglePressed && !wasTogglePressed) || winChange)
         Gui Cursor:+Owner%hwnd%
         DllCall("ShowCursor", Int, 0)
         
-        ; enable left click hotkey
-        Hotkey, *LButton, LeftClickHotkey, on
+        ; start in combat mode
+        gosub, SetCombatMode
+        
+        ; enable menu mode toggle hotkey
+        Hotkey, *%menuModeToggleKey%, MenuModeToggleHotkey, on
         
         ; enable scroll up overwrite
         Hotkey, *WheelUp, WheelUpHotkey, on
@@ -106,8 +130,12 @@ if((isTogglePressed && !wasTogglePressed) || winChange)
         ; show cursor
         DllCall("ShowCursor", Int, 1)
         
-        ; disable left click hotkey
-        Hotkey, *LButton, LeftClickHotkey, off
+        ; blindly disable combat/menu hotkeys
+        gosub, DisableCombatHotkeys
+        gosub, DisableMenuHotkeys
+        
+        ; disable menu mode toggle hotkey
+        Hotkey, *%menuModeToggleKey%, MenuModeToggleHotkey, off
         
         ; disable scroll up overwrite
         Hotkey, *WheelUp, WheelUpHotkey, off
@@ -248,11 +276,7 @@ updateEMA(val, ByRef avg, alpha)
     avg := alpha*val + (1-alpha)*avg
 }
 
-LeftClickHotkey:
-send {Blind}{p down}
-KeyWait, LButton
-send {Blind}{p up}
-return
+
 
 WheelUpHotkey:
 doScrollUp := 1
@@ -260,4 +284,167 @@ return
 
 WheelDownHotkey:
 doScrollDown := 1
+return
+
+
+
+LeftClickCombatHotkey:
+send {Blind}{%emuTriangleKey% down}
+KeyWait, LButton
+send {Blind}{%emuTriangleKey% up}
+return
+
+LeftClickMenuHotkey:
+send {Blind}{%emuCircleKey% down}
+KeyWait, LButton
+send {Blind}{%emuCircleKey% up}
+return
+
+RightClickCombatHotkey:
+send {Blind}{%emuCircleKey% down}
+KeyWait, RButton
+send {Blind}{%emuCircleKey% up}
+return
+
+RightClickMenuHotkey:
+send {Blind}{%emuCrossKey% down}
+KeyWait, RButton
+send {Blind}{%emuCrossKey% up}
+return
+
+
+
+WMenuHotkey:
+send {Blind}{%emuDpadUpKey% down}
+KeyWait, W
+send {Blind}{%emuDpadUpKey% up}
+return
+
+AMenuHotkey:
+send {Blind}{%emuDpadLeftKey% down}
+KeyWait, A
+send {Blind}{%emuDpadLeftKey% up}
+return
+
+SMenuHotkey:
+send {Blind}{%emuDpadDownKey% down}
+KeyWait, S
+send {Blind}{%emuDpadDownKey% up}
+return
+
+DMenuHotkey:
+send {Blind}{%emuDpadRightKey% down}
+KeyWait, D
+send {Blind}{%emuDpadRightKey% up}
+return
+
+
+
+WCombatHotkey:
+send {Blind}{%emuAnalogUpKey% down}
+KeyWait, W
+send {Blind}{%emuAnalogUpKey% up}
+return
+
+ACombatHotkey:
+send {Blind}{%emuAnalogLeftKey% down}
+KeyWait, A
+send {Blind}{%emuAnalogLeftKey% up}
+return
+
+SCombatHotkey:
+send {Blind}{%emuAnalogDownKey% down}
+KeyWait, S
+send {Blind}{%emuAnalogDownKey% up}
+return
+
+DCombatHotkey:
+send {Blind}{%emuAnalogRightKey% down}
+KeyWait, D
+send {Blind}{%emuAnalogRightKey% up}
+return
+
+
+
+DisableKeyHotkey:
+return
+
+
+
+SetCombatMode:
+menuMode := false
+gosub, DisableMenuHotkeys
+gosub, EnableCombatHotkeys
+return
+
+
+
+MenuModeToggleHotkey:
+menuMode := !menuMode
+if(menuMode)
+{
+    SoundPlay, %A_WorkingDir%/%menuModeSoundPath%
+    gosub, DisableCombatHotkeys
+    gosub, EnableMenuHotkeys
+}
+else
+{
+    SoundPlay, %A_WorkingDir%/%combatModeSoundPath%
+    gosub, DisableMenuHotkeys
+    gosub, EnableCombatHotkeys
+}
+KeyWait, %menuModeToggleKey%
+return
+
+
+
+DisableMenuHotkeys:
+
+Hotkey, *W, WMenuHotkey, off
+Hotkey, *A, AMenuHotkey, off
+Hotkey, *S, SMenuHotkey, off
+Hotkey, *D, DMenuHotkey, off
+
+Hotkey, *LButton, LeftClickMenuHotkey, off
+Hotkey, *RButton, RightClickMenuHotkey, off
+
+return
+
+
+EnableMenuHotkeys:
+
+Hotkey, *W, WMenuHotkey, on
+Hotkey, *A, AMenuHotkey, on
+Hotkey, *S, SMenuHotkey, on
+Hotkey, *D, DMenuHotkey, on
+
+Hotkey, *LButton, LeftClickMenuHotkey, on
+Hotkey, *RButton, RightClickMenuHotkey, on
+
+return
+
+
+DisableCombatHotkeys:
+
+Hotkey, *W, WCombatHotkey, off
+Hotkey, *A, ACombatHotkey, off
+Hotkey, *S, SCombatHotkey, off
+Hotkey, *D, DCombatHotkey, off
+
+Hotkey, *LButton, LeftClickCombatHotkey, off
+Hotkey, *RButton, RightClickCombatHotkey, off
+
+return
+
+
+EnableCombatHotkeys:
+
+Hotkey, *W, WCombatHotkey, on
+Hotkey, *A, ACombatHotkey, on
+Hotkey, *S, SCombatHotkey, on
+Hotkey, *D, DCombatHotkey, on
+
+Hotkey, *LButton, LeftClickCombatHotkey, on
+Hotkey, *RButton, RightClickCombatHotkey, on
+
 return
