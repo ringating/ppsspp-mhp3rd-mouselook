@@ -196,19 +196,21 @@ FastUpdate:
 
     if(scriptIsActive)
     {
-        For index, value in userKeys
+        if(menuMode)
         {
-            if(menuMode)
+            LiftAllCombatKeys()
+            For index, value in userKeys
             {
                 UpdateXAccordingToY(value.menu, value.key)
-                LiftAllCombatKeys()
             }
-            else
+        }
+        else
+        {
+            LiftAllMenuKeys()
+            For index, value in userKeys
             {
                 UpdateXAccordingToY(value.combat, value.key)
-                LiftAllMenuKeys()
             }
-            
         }
         liftAllKeys := true
     }
