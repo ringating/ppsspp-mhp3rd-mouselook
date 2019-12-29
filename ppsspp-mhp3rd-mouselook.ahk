@@ -168,23 +168,23 @@ Update:
 
     if(didScrollUp)
     {
-        send {Blind}{%emuDpadUpKey% up}
+        send {Blind}{%emuDpadUp% up}
         didScrollUp := false
     }
     if(didScrollDown)
     {
-        send {Blind}{%emuDpadDownKey% up}
+        send {Blind}{%emuDpadDown% up}
         didScrollDown := false
     }
     if(doScrollUp)
     {
-        send {Blind}{%emuDpadUpKey% down}
+        send {Blind}{%emuDpadUp% down}
         didScrollUp := true
         doScrollUp := false
     }
     if(doScrollDown)
     {
-        send {Blind}{%emuDpadDownKey% down}
+        send {Blind}{%emuDpadDown% down}
         didScrollDown := true
         doScrollDown := false
     }

@@ -51,6 +51,15 @@ MessageFromParentScript(wParam, lParam, msg, hwnd)
 {
     scriptActive := wParam
     inMenuMode := lParam
+    
+    if(scriptActive)
+    {
+        Hotkey, *LButton, DisableKeyHotkey, on
+    }
+    else
+    {
+        Hotkey, *LButton, DisableKeyHotkey, off
+    }
 }
 
 
@@ -117,4 +126,9 @@ FastUpdate:
         }
     }
 
+    return
+
+
+
+DisableKeyHotkey:
     return
