@@ -1,6 +1,7 @@
 #persistent
 sendmode input
 
+msgPort := 4444
 OnMessage(4444, "MessageFromParentScript")
 
 global inMenuMode := false
@@ -48,8 +49,8 @@ return
 
 MessageFromParentScript(wParam, lParam, msg, hwnd)
 {
-    scriptActive := %wParam%
-    inMenuMode := %lParam%
+    scriptActive := wParam
+    inMenuMode := lParam
 }
 
 

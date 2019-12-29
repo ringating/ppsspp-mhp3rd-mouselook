@@ -1,9 +1,18 @@
 ; original/inspiration script: https://autohotkey.com/board/topic/92242-map-mouse-movements-to-arrow-keys/?p=581577
 
 #Persistent
+
 sendmode input
+
 SetDefaultMouseSpeed, 0
 CoordMode, mouse, window
+
+SetTitleMatchMode, 2
+DetectHiddenWindows, On
+global otherScriptName := "rebind-helper.ahk"
+global msgPort := 4444
+
+Run, %otherScriptName%, %A_WorkingDir%
 
 toggleKey := "F1"   ; the key to enable/disable the script
 pixelsForMaxSpeed := 200 ; moving this many pixels (or more) per update will result in max turn speed
@@ -16,7 +25,7 @@ ema := 0
 prevDir := 0
 
 ; script toggling stuff
-scriptIsActive   := 0
+global scriptIsActive   := 0
 scriptWasActive  := 0
 isTogglePressed  := 0
 wasTogglePressed := 0
@@ -24,8 +33,6 @@ wasTogglePressed := 0
 SetTimer, Update, 33 ; this value should be ( 1000 / (game's framerate) )
 ; if the game's framerate is variable, then use the lowest expected framerate as the "game's framerate"
 ; this will hopefully ensure that none of the inputs are missed by the game
-
-SetTimer, FastUpdate, 10 ; poll more frequently in order to reduce latency on button inputs
 
 ; scroll stuff
 doScrollUp := false
@@ -52,24 +59,9 @@ emuL := ";"
 emuR := "'"
 emuNull := "m" ; used to effectively disable a key as far as ppsspp is concerned
 
-; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
-; ;;; user keybinds (customize controls here!) ;;; ;
-; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
-userKeys := {}
-userKeys.Push({ key: "w",       combat: emuAnalogUp,     menu: emuDpadUp    })   
-userKeys.Push({ key: "a",       combat: emuAnalogLeft,   menu: emuDpadLeft  })
-userKeys.Push({ key: "d",       combat: emuAnalogRight,  menu: emuDpadRight })    
-userKeys.Push({ key: "s",       combat: emuAnalogDown,   menu: emuDpadDown  })    
-userKeys.Push({ key: "LButton", combat: emuTriangle,     menu: emuCircle    })  
-userKeys.Push({ key: "RButton", combat: emuCircle,       menu: emuCross     }) 
-userKeys.Push({ key: "Space",   combat: emuCross,        menu: emuNull      })
-; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
-; ;;;;;;;;;;;;; end of user keybinds ;;;;;;;;;;;;; ;
-; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
-
 ; menu/combat state toggling stuff
 menuModeToggleKey = r
-menuMode := false
+global menuMode := false
 
 ; toggle sfx
 menuModeSoundPath = main6bL.dsp.wav
@@ -79,8 +71,6 @@ combatModeSoundPath = main3f.dsp.wav
 currWinID := 0
 prevWinID := 0
 winChange := false
-
-liftAllKeys := true
 
 return
 
@@ -117,6 +107,9 @@ RunAtUpdateStart:
             ; start in combat mode
             menuMode := false
             
+            ; disable left control key
+            Hotkey, *LCtrl, DisableKeyHotkey, on
+            
             ; enable menu mode toggle hotkey
             Hotkey, *%menuModeToggleKey%, MenuModeToggleHotkey, on
             
@@ -135,6 +128,9 @@ RunAtUpdateStart:
             ; show cursor
             DllCall("ShowCursor", Int, 1)
             
+            ; enable left control key
+            Hotkey, *LCtrl, DisableKeyHotkey, off
+            
             ; disable menu mode toggle hotkey
             Hotkey, *%menuModeToggleKey%, MenuModeToggleHotkey, off
             
@@ -144,6 +140,8 @@ RunAtUpdateStart:
             ; disable scroll down overwrite
             Hotkey, *WheelDown, WheelDownHotkey, off
         }
+        
+        UpdateHelperScript()
     }
 
     if (scriptIsActive)
@@ -154,73 +152,6 @@ RunAtUpdateStart:
         {
             ; MsgBox, currWinID: %currWinID%, prevWinID: %prevWinID%
             winChange := true
-        }
-    }
-
-    return
-
-
-
-UpdateXAccordingToY(x,y)
-{
-    if (GetKeyState(y, "P"))
-    {
-        send {blind}{%x% down}
-    }
-    else
-    {
-        send {blind}{%x% up}
-    }
-}
-
-LiftAllCombatKeys()
-{
-    For index, value in userKeys
-    {
-        send {blind}{value.combat up}
-    }
-}
-
-LiftAllMenuKeys()
-{
-    For index, value in userKeys
-    {
-        send {blind}{value.menu up}
-    }
-}
-
-FastUpdate:
-
-    if(winChange)
-        return
-
-    if(scriptIsActive)
-    {
-        if(menuMode)
-        {
-            LiftAllCombatKeys()
-            For index, value in userKeys
-            {
-                UpdateXAccordingToY(value.menu, value.key)
-            }
-        }
-        else
-        {
-            LiftAllMenuKeys()
-            For index, value in userKeys
-            {
-                UpdateXAccordingToY(value.combat, value.key)
-            }
-        }
-        liftAllKeys := true
-    }
-    else
-    {
-        if(liftAllKeys)
-        {
-            LiftAllCombatKeys()
-            LiftAllMenuKeys()
-            liftAllKeys := false
         }
     }
 
@@ -386,6 +317,13 @@ updateEMA(val, ByRef avg, alpha)
 
 
 
+UpdateHelperScript()
+{
+    PostMessage, 4444, %scriptIsActive%, %menuMode%, , %otherScriptName%
+}
+
+
+
 WheelUpHotkey:
     doScrollUp := 1
     return
@@ -408,12 +346,11 @@ MenuModeToggleHotkey:
     if(menuMode)
     {
         SoundPlay, %A_WorkingDir%/%menuModeSoundPath%
-        LiftAllCombatKeys()
     }
     else
     {
         SoundPlay, %A_WorkingDir%/%combatModeSoundPath%
-        LiftAllMenuKeys()
     }
+    UpdateHelperScript()
     KeyWait, %menuModeToggleKey%
     return
