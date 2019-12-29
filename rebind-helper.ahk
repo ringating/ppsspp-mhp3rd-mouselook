@@ -43,8 +43,9 @@ userKeys.Push({ key: "LCtrl",   combat: "L",           menu: "Null"       })
 userKeys.Push({ key: "LShift",  combat: "R",           menu: "Null"       })
 userKeys.Push({ key: "q",       combat: "Square",      menu: "L"          })
 userKeys.Push({ key: "e",       combat: "Circle",      menu: "R"          })
-userKeys.Push({ key: "XButton1",combat: "Null",        menu: "Square"     })
-userKeys.Push({ key: "XButton1",combat: "Null",        menu: "Triangle"   })
+userKeys.Push({ key: "XButton1",combat: "R",           menu: "Square"     })
+userKeys.Push({ key: "XButton2",combat: "Null",        menu: "Triangle"   })
+userKeys.Push({ key: "MButton", combat: "L",           menu: "Null"       })
 
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
 ; ;;;;;;;;;;;;; end of user keybinds ;;;;;;;;;;;;; ;
@@ -79,6 +80,27 @@ MessageFromParentScript(wParam, lParam, msg, hwnd)
     
     GoSub, SetAllPressedFalse
 }
+
+
+
+UpdateAllAccordingToPressedExceptDpad:
+    For key, value in emu
+    {
+        if(key != "DpadUp" && key != "DpadLeft" && key != "DpadRight" && key != "DpadDown")
+        {
+            if(value.pressed)
+            {
+                tmp := value.key
+                send {blind}{%tmp% down}
+            }
+            else
+            {
+                tmp := value.key
+                send {blind}{%tmp% up}
+            }
+        }
+    }
+    return
 
 
 
@@ -138,6 +160,7 @@ FastUpdate:
                     emu[value.menu].pressed := true
                 }
             }
+            GoSub, UpdateAllAccordingToPressed
         }
         else
         {
@@ -148,8 +171,8 @@ FastUpdate:
                     emu[value.combat].pressed := true
                 }
             }
+            GoSub, UpdateAllAccordingToPressedExceptDpad
         }
-        GoSub, UpdateAllAccordingToPressed
         liftAllKeys := true
     }
     else

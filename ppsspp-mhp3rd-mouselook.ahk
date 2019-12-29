@@ -15,10 +15,10 @@ Run, %otherScriptName%, %A_WorkingDir%
 
 toggleKey := "F1"   ; the key to enable/disable the script
 pixelsForMaxSpeed := 200 ; moving this many pixels (or more) per update will result in max turn speed
-pixelThreshold := 50 ; number of pixels mouse must move for input to count at all
+pixelThreshold := 40 ; number of pixels mouse must move for input to count at all
 
 ; see https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-alpha := 0.25
+alpha := 0.15
 ema := 0
 
 prevDir := 0
