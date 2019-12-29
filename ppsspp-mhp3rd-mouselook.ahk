@@ -10,7 +10,6 @@ CoordMode, mouse, window
 SetTitleMatchMode, 2
 DetectHiddenWindows, On
 global otherScriptName := "rebind-helper.ahk"
-global msgPort := 4444
 
 Run, %otherScriptName%, %A_WorkingDir%
 
@@ -107,9 +106,6 @@ RunAtUpdateStart:
             ; start in combat mode
             menuMode := false
             
-            ; disable left control key
-            Hotkey, *LCtrl, DisableKeyHotkey, on
-            
             ; enable menu mode toggle hotkey
             Hotkey, *%menuModeToggleKey%, MenuModeToggleHotkey, on
             
@@ -127,9 +123,6 @@ RunAtUpdateStart:
         {
             ; show cursor
             DllCall("ShowCursor", Int, 1)
-            
-            ; enable left control key
-            Hotkey, *LCtrl, DisableKeyHotkey, off
             
             ; disable menu mode toggle hotkey
             Hotkey, *%menuModeToggleKey%, MenuModeToggleHotkey, off

@@ -1,7 +1,6 @@
 #persistent
 sendmode input
 
-msgPort := 4444
 OnMessage(4444, "MessageFromParentScript")
 
 global inMenuMode := false
@@ -11,33 +10,42 @@ liftAllKeys := false
 ; emulator keybind constants
 ; (emulator should match these binds)
 ; (none of the user's script keybinds should overlap with any of these keys)
-emuDpadUp := "up"
-emuDpadLeft := "left"
-emuDpadRight := "right"
-emuDpadDown := "down"
-emuAnalogUp := "h"
-emuAnalogLeft := "j"
-emuAnalogRight := "k"
-emuAnalogDown := "l"
-emuTriangle := "u"
-emuSquare := "i"
-emuCircle := "o"
-emuCross := "p"
-emuL := ";"
-emuR := "'"
-emuNull := "m" ; used to effectively disable a key (as far as ppsspp is concerned)
+emu := {}
+emu.DpadUp :=       {key: "up",     pressed: false}
+emu.DpadLeft :=     {key: "left",   pressed: false}
+emu.DpadRight :=    {key: "right",  pressed: false}
+emu.DpadDown :=     {key: "down",   pressed: false}
+emu.AnalogUp :=     {key: "h", pressed: false}
+emu.AnalogLeft :=   {key: "j", pressed: false}
+emu.AnalogRight :=  {key: "k", pressed: false}
+emu.AnalogDown :=   {key: "l", pressed: false}
+emu.Triangle :=     {key: "u", pressed: false}
+emu.Square :=       {key: "i", pressed: false}
+emu.Circle :=       {key: "o", pressed: false}
+emu.Cross :=        {key: "p", pressed: false}
+emu.L :=            {key: ";", pressed: false}
+emu.R :=            {key: "'", pressed: false}
+emu.Null :=         {key: "m", pressed: false} ; used to effectively disable a key (as far as ppsspp is concerned)
 
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
 ; ;;; user keybinds (customize controls here!) ;;; ;
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
+
 userKeys := {}
-userKeys.Push({ key: "w",       combat: emuAnalogUp,     menu: emuDpadUp    })   
-userKeys.Push({ key: "a",       combat: emuAnalogLeft,   menu: emuDpadLeft  })
-userKeys.Push({ key: "d",       combat: emuAnalogRight,  menu: emuDpadRight })    
-userKeys.Push({ key: "s",       combat: emuAnalogDown,   menu: emuDpadDown  })    
-userKeys.Push({ key: "LButton", combat: emuTriangle,     menu: emuCircle    })  
-userKeys.Push({ key: "RButton", combat: emuCircle,       menu: emuCross     }) 
-userKeys.Push({ key: "Space",   combat: emuCross,        menu: emuNull      })
+userKeys.Push({ key: "w",       combat: "AnalogUp",    menu: "DpadUp"     })   
+userKeys.Push({ key: "a",       combat: "AnalogLeft",  menu: "DpadLeft"   })
+userKeys.Push({ key: "d",       combat: "AnalogRight", menu: "DpadRight"  })    
+userKeys.Push({ key: "s",       combat: "AnalogDown",  menu: "DpadDown"   })    
+userKeys.Push({ key: "LButton", combat: "Triangle",    menu: "Circle"     })  
+userKeys.Push({ key: "RButton", combat: "Circle",      menu: "Cross"      }) 
+userKeys.Push({ key: "Space",   combat: "Cross",       menu: "Null"       })
+userKeys.Push({ key: "LCtrl",   combat: "L",           menu: "Null"       })
+userKeys.Push({ key: "LShift",  combat: "R",           menu: "Null"       })
+userKeys.Push({ key: "q",       combat: "Square",      menu: "L"          })
+userKeys.Push({ key: "e",       combat: "Circle",      menu: "R"          })
+userKeys.Push({ key: "XButton1",combat: "Null",        menu: "Square"     })
+userKeys.Push({ key: "XButton1",combat: "Null",        menu: "Triangle"   })
+
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
 ; ;;;;;;;;;;;;; end of user keybinds ;;;;;;;;;;;;; ;
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
@@ -47,88 +55,110 @@ SetTimer, FastUpdate, 10
 return
 
 
+
 MessageFromParentScript(wParam, lParam, msg, hwnd)
 {
     scriptActive := wParam
     inMenuMode := lParam
     
+    ; enable/disable inputs that interfere w/ gameplay
     if(scriptActive)
     {
         Hotkey, *LButton, DisableKeyHotkey, on
+        Hotkey, *RButton, DisableKeyHotkey, on
+        Hotkey, *LCtrl, DisableKeyHotkey, on
+        Hotkey, *LAlt, DisableKeyHotkey, on
     }
     else
     {
         Hotkey, *LButton, DisableKeyHotkey, off
+        Hotkey, *RButton, DisableKeyHotkey, off
+        Hotkey, *LCtrl, DisableKeyHotkey, off
+        Hotkey, *LAlt, DisableKeyHotkey, off
     }
+    
+    GoSub, SetAllPressedFalse
 }
 
 
-UpdateXAccordingToY(x,y)
-{
-    if (GetKeyState(y, "P"))
+
+UpdateAllAccordingToPressed:
+    For key, value in emu
     {
-        send {blind}{%x% down}
+        if(value.pressed)
+        {
+            tmp := value.key
+            send {blind}{%tmp% down}
+        }
+        else
+        {
+            tmp := value.key
+            send {blind}{%tmp% up}
+        }
     }
-    else
-    {
-        send {blind}{%x% up}
-    }
-}
+    return
 
 
-LiftAllCombatKeys()
-{
-    For index, value in userKeys
+
+SetAllPressedFalse:
+    For key, value in emu
     {
-        send {blind}{value.combat up}
+        value.pressed := false
     }
-}
+    return
 
 
-LiftAllMenuKeys()
-{
-    For index, value in userKeys
+
+LiftAllEmuKeys:
+    For key, value in emu
     {
-        send {blind}{value.menu up}
+        send {blind}{value.key up}
+        value.pressed := false
     }
-}
+    return
+
+
+
+DisableKeyHotkey:
+    return
+
 
 
 FastUpdate:
 
     if(scriptActive)
     {
+        GoSub, SetAllPressedFalse
         if(inMenuMode)
         {
-            LiftAllCombatKeys()
             For index, value in userKeys
             {
-                UpdateXAccordingToY(value.menu, value.key)
+                if (GetKeyState(value.key, "P"))
+                {
+                    emu[value.menu].pressed := true
+                }
             }
         }
         else
         {
-            LiftAllMenuKeys()
             For index, value in userKeys
             {
-                UpdateXAccordingToY(value.combat, value.key)
+                if (GetKeyState(value.key, "P"))
+                {
+                    emu[value.combat].pressed := true
+                }
             }
         }
+        GoSub, UpdateAllAccordingToPressed
         liftAllKeys := true
     }
     else
     {
         if(liftAllKeys)
         {
-            LiftAllCombatKeys()
-            LiftAllMenuKeys()
+            GoSub, LiftAllEmuKeys
             liftAllKeys := false
         }
     }
 
-    return
-
-
-
-DisableKeyHotkey:
     return
